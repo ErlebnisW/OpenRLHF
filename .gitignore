@@ -148,5 +148,5 @@ core
 .nfs*
 *jianh*
 *test_scripts*
-*/checkpoint/*
+examples/scripts/checkpoint/*
 examples/scripts/wandb*
