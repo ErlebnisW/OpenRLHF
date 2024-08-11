@@ -5,7 +5,7 @@ set -x
 read -r -d '' training_commands <<EOF
 openrlhf.cli.train_sft \
    --max_len 2048 \
-   --dataset PKU-Alignment/Align-Anything-Instruction-100K \
+   --dataset Open-Orca/OpenOrca \
    --input_key prompt \
    --output_key response \
    --train_batch_size 256 \
@@ -17,15 +17,15 @@ openrlhf.cli.train_sft \
    --logging_steps 1 \
    --eval_steps -1 \
    --zero_stage 2 \
-   --max_epochs 3 \
+   --max_epochs 1 \
    --bf16 \
    --flash_attn \
-   --learning_rate 4e-5 \
+   --learning_rate 5e-6 \
    --load_checkpoint \
    --gradient_checkpointing \
    --use_wandb true \
    --wandb_project Formal-SFT \
-   --wandb_run_name llama3-align-anything 
+   --wandb_run_name llama3-8b-openorca 
 EOF
     
     # --packing_samples
