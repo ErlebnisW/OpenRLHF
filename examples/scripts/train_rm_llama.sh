@@ -1,3 +1,5 @@
+export HF_ENDPOINT="https://hf-mirror.com"
+
 set -x
 
 read -r -d '' training_commands <<EOF
@@ -8,7 +10,7 @@ openrlhf.cli.train_rm \
    --eval_steps -1 \
    --train_batch_size 256 \
    --micro_train_batch_size 1 \
-   --pretrain OpenRLHF/Llama-3-8b-sft-mixture \
+   --pretrain /home/wmz/checkpoints/llama3-8b-it \
    --bf16 \
    --max_epochs 1 \
    --max_len 8192 \
