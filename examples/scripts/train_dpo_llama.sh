@@ -1,3 +1,5 @@
+export HF_ENDPOINT="https://hf-mirror.com"
+
 set -x
 
 read -r -d '' training_commands <<EOF
