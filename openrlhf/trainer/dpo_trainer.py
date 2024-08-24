@@ -166,16 +166,23 @@ class DPOTrainer(ABC):
                 acc = (chosen_reward > reject_reward).float().mean().item()
                 acc_mean = acc_mean * 0.9 + 0.1 * acc
                 loss_mean = loss_mean * 0.9 + 0.1 * preference_loss.item()
+                
+                chosen_reward_mean = chosen_reward.mean().item()
+                reject_reward_mean = reject_reward.mean().item()
+                reward_margin = chosen_reward_mean - reject_reward_mean
+                
                 # dpo logs
                 logs_dict = {
                     "loss": preference_loss.item(),
                     "acc": acc,
-                    "chosen_reward": chosen_reward.mean().item(),
-                    "reject_reward": reject_reward.mean().item(),
+                    "chosen_reward": chosen_reward_mean,
+                    "reject_reward": reject_reward_mean,
+                    "reward_margin": reward_margin,
                     "loss_mean": loss_mean,
                     "acc_mean": acc_mean,
                     "lr": self.scheduler.get_last_lr()[0],
                 }
+                
                 if self.nll_loss:
                     logs_dict["nll_loss"] = nll_loss.item()
                 # step bar
@@ -184,10 +191,11 @@ class DPOTrainer(ABC):
                 step_bar.update()
 
                 # logs/checkpoints/evaluation
-                if step % self.strategy.accumulated_gradient == 0:
-                    global_step = step // self.strategy.accumulated_gradient
-                    client_states = {"consumed_samples": global_step * args.train_batch_size}
-                    self.save_logs_and_checkpoints(args, global_step, step_bar, logs_dict, client_states)
+                # if step % self.strategy.accumulated_gradient == 0:
+                    # global_step = step // self.strategy.accumulated_gradient
+                global_step = step
+                client_states = {"consumed_samples": global_step * args.train_batch_size}
+                self.save_logs_and_checkpoints(args, global_step, step_bar, logs_dict, client_states)
 
                 step += 1
             epoch_bar.update()
@@ -209,8 +217,9 @@ class DPOTrainer(ABC):
                 self._wandb.log(logs)
 
         # eval
-        if global_step % args.eval_steps == 0:
-            self.evaluate(self.eval_dataloader, global_step)
+        # if global_step % args.eval_steps == 0:
+        #     self.evaluate(self.eval_dataloader, global_step)
+        
         # save ckpt
         # TODO: save best model on dev, use loss/perplexity on whole dev dataset as metric
         if global_step % args.save_steps == 0:
