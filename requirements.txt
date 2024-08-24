@@ -1,4 +1,4 @@
-vLLM==0.4.2
+# vLLM==0.4.2
 accelerate
 bitsandbytes
 datasets
