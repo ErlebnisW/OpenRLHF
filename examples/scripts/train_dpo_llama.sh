@@ -1,9 +1,10 @@
 export HF_ENDPOINT="https://hf-mirror.com"
+export WANDB_MODE=online
 
 set -x
 
 project_name=DPO-MIX-7k
-run_name=llama3-mix-dpo-0.1
+run_name=llama3-ent-0.2-0.1-0.5-gap
 
 read -r -d '' training_commands <<EOF
 openrlhf.cli.train_dpo \
@@ -21,16 +22,17 @@ openrlhf.cli.train_dpo \
    --adam_offload \
    --learning_rate 5e-7 \
    --beta 1.1 \
-   --dataset argilla/dpo-mix-7k \
+   --dataset RLHFlow/Helpsteer-preference-standard \
    --apply_chat_template \
    --train_split train \
-   --eval_split eval \
+   --eval_split test \
    --chosen_key chosen \
    --rejected_key rejected \
    --flash_attn \
    --load_checkpoint \
    --gradient_checkpointing \
    --use_wandb True \
+   --wandb_project ${project_name}
    --wandb_run_name ${run_name}
 EOF
     # --use_wandb [WANDB_TOKENS] or True (use wandb login command)
