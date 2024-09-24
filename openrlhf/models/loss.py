@@ -128,7 +128,7 @@ class DPOLoss(nn.Module):
         pi_logratios = policy_chosen_logps - policy_rejected_logps
         ref_logratios = reference_chosen_logps - reference_rejected_logps
 
-        logits = 0.3 * pi_logratios - 0.1 * ref_logratios - 0.5
+        logits = 2.1 * (pi_logratios - ref_logratios)
         if self.ipo:
             losses = (logits - 1 / (2 * self.beta)) ** 2  # Eq. 17 of https://arxiv.org/pdf/2310.12036v2.pdf
         else:
@@ -139,8 +139,8 @@ class DPOLoss(nn.Module):
             )
 
         loss = losses.mean()
-        chosen_rewards = (0.2 * policy_chosen_logps - 0.1 * reference_chosen_logps).detach()
-        rejected_rewards = (0.2 * policy_rejected_logps - 0.1 * reference_rejected_logps).detach()
+        chosen_rewards = 2.1 * (policy_chosen_logps - reference_chosen_logps).detach()
+        rejected_rewards = 2.1 * (policy_rejected_logps - reference_rejected_logps).detach()
 
         return loss, chosen_rewards, rejected_rewards
 

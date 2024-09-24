@@ -4,7 +4,7 @@ export WANDB_MODE=online
 set -x
 
 project_name=DPO-MIX-7k
-run_name=llama3-ent-0.2-0.1-0.5-gap
+run_name=llama3-ref-0.1-0.5
 
 read -r -d '' training_commands <<EOF
 openrlhf.cli.train_dpo \
@@ -21,7 +21,7 @@ openrlhf.cli.train_dpo \
    --zero_stage 3 \
    --adam_offload \
    --learning_rate 5e-7 \
-   --beta 1.1 \
+   --beta 0.2 \
    --dataset RLHFlow/Helpsteer-preference-standard \
    --apply_chat_template \
    --train_split train \
@@ -31,7 +31,7 @@ openrlhf.cli.train_dpo \
    --flash_attn \
    --load_checkpoint \
    --gradient_checkpointing \
-   --use_wandb True \
+   --use_wandb False \
    --wandb_project ${project_name}
    --wandb_run_name ${run_name}
 EOF
