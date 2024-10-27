@@ -39,8 +39,9 @@ while (($iter < $TRAINING_ITERS)); do
       POLICY_MODEL_PATH=$MODEL_OUTPUT_PATH
    fi
 
-   MODEL_OUTPUT_PATH=./checkpoint/llama-3-iter-dpo/iter-${iter}
-   run_name=baseline-3-iter-${iter}
+   MODEL_OUTPUT_PATH=./checkpoint/llama-3-iter-ipo/iter-${iter}
+
+   run_name=ipo-baseline-3-iter-${iter}
 
    read -r -d '' generate_commands <<EOF
 
@@ -85,12 +86,13 @@ EOF
 
    read -r -d '' dpo_commands <<EOF
 openrlhf.cli.train_dpo \
+   --ipo \
    --max_len 4096 \
    --dataset $RM_OUTPUT \
    --dataset_probs 1.0 \
    --prompt_key prompt \
-   --train_batch_size 16 \
-   --micro_train_batch_size 2 \
+   --train_batch_size 128 \
+   --micro_train_batch_size 1 \
    --pretrain $POLICY_MODEL_PATH \
    --ref_pretrain $REF_MODEL_PATH \
    --save_path $MODEL_OUTPUT_PATH \
