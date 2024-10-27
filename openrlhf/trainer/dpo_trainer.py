@@ -175,6 +175,7 @@ class DPOTrainer(ABC):
 
                 loss = preference_loss + aux_loss * self.args.aux_loss_coef + nll_loss * self.args.nll_loss_coef
                 self.strategy.backward(loss, self.model, self.optimizer)
+                torch.cuda.empty_cache()
                 self.strategy.optimizer_step(self.optimizer, self.model, self.scheduler)
                 torch.cuda.empty_cache()
 
