@@ -176,6 +176,7 @@ class DPOTrainer(ABC):
                 loss = preference_loss + aux_loss * self.args.aux_loss_coef + nll_loss * self.args.nll_loss_coef
                 self.strategy.backward(loss, self.model, self.optimizer)
                 self.strategy.optimizer_step(self.optimizer, self.model, self.scheduler)
+                torch.cuda.empty_cache()
 
                 acc = (chosen_reward > reject_reward).float().mean().item()
                 acc_mean = acc_mean * 0.9 + 0.1 * acc
@@ -197,13 +198,21 @@ class DPOTrainer(ABC):
                 step_bar.set_postfix(logs_dict)
                 step_bar.update()
 
+                # # logs/checkpoints/evaluation
+                # if step % self.strategy.accumulated_gradient == 0:
+                #     global_step = step // self.strategy.accumulated_gradient
+                #     client_states = {"consumed_samples": global_step * args.train_batch_size}
+                #     self.save_logs_and_checkpoints(args, global_step, step_bar, logs_dict, client_states)
+                    
                 # logs/checkpoints/evaluation
-                if step % self.strategy.accumulated_gradient == 0:
-                    global_step = step // self.strategy.accumulated_gradient
-                    client_states = {"consumed_samples": global_step * args.train_batch_size}
-                    self.save_logs_and_checkpoints(args, global_step, step_bar, logs_dict, client_states)
+                # if step % self.strategy.accumulated_gradient == 0:
+                    # global_step = step // self.strategy.accumulated_gradient
+                global_step = step
+                client_states = {"consumed_samples": global_step * args.train_batch_size}
+                self.save_logs_and_checkpoints(args, global_step, step_bar, logs_dict, client_states)
 
                 step += 1
+                
             epoch_bar.update()
 
         if self._wandb is not None and self.strategy.is_rank_0():
@@ -224,9 +233,10 @@ class DPOTrainer(ABC):
                 for k, v in logs_dict.items():
                     self._tensorboard.add_scalar(f"train/{k}", v, global_step)
 
-        # eval
-        if global_step % args.eval_steps == 0:
-            self.evaluate(self.eval_dataloader, global_step)
+        # # eval
+        # if global_step % args.eval_steps == 0:
+        #     self.evaluate(self.eval_dataloader, global_step)
+        
         # save ckpt
         # TODO: save best model on dev, use loss/perplexity on whole dev dataset as metric
         if global_step % args.save_steps == 0:
