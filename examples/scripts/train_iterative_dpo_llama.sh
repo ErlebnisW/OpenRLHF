@@ -1,5 +1,10 @@
 set -x
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
+export HF_ENDPOINT="https://hf-mirror.com"
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export WANDB_MODE=online
+
+project_name=Iterative-DPO
 
 checkSuccess() {
    if [[ $? != 0 ]]; then
@@ -11,13 +16,12 @@ checkSuccess() {
 mkdir -p ./checkpoint/llama-3-8b-iter-dpo
 GENERATE_OUTPUT=./checkpoint/llama-3-8b-iter-dpo/generate.jsonl
 RM_OUTPUT=./checkpoint/llama-3-8b-iter-dpo/rm.jsonl
-MODEL_OUTPUT_PATH=./checkpoint/llama-3-8b-iter-dpo/checkpoint
 ITER_LOG_PATH=null
 
-TRAINING_ITERS=5
+TRAINING_ITERS=3
 ROLLOUT_BATCH_SIZE=10240
 
-POLICY_MODEL_PATH=OpenRLHF/Llama-3-8b-sft-mixture
+POLICY_MODEL_PATH=/data/wmz_workspace/checkpoints/llama3-sft
 REF_MODEL_PATH=$POLICY_MODEL_PATH
 
 iter=0
@@ -32,18 +36,23 @@ while (($iter < $TRAINING_ITERS)); do
       POLICY_MODEL_PATH=$MODEL_OUTPUT_PATH
    fi
 
+   MODEL_OUTPUT_PATH=./checkpoint/llama-3-iter-dpo/iter-${iter}
+   run_name=baseline-3-iter-${iter}
+
    read -r -d '' generate_commands <<EOF
+
 openrlhf.cli.batch_inference
    --eval_task generate_vllm \
    --pretrain $POLICY_MODEL_PATH \
    --max_new_tokens 2048 \
    --prompt_max_len 2048 \
-   --dataset OpenRLHF/prompt-collection-v0.1 \
+   --dataset /data/wmz_workspace/MDSPO/datasets/prompt-60k/train.jsonl \
    --input_key context_messages \
+   --max_samples 60000 \
    --apply_chat_template \
    --temperature 1.0 \
-   --tp_size 4 \
-   --best_of_n 8 \
+   --tp_size 8 \
+   --best_of_n 2 \
    --enable_prefix_caching \
    --max_num_seqs 64 \
    --iter $iter \
@@ -57,7 +66,7 @@ EOF
    read -r -d '' get_rewards_commands <<EOF
 openrlhf.cli.batch_inference
    --eval_task rm \
-   --pretrain OpenRLHF/Llama-3-8b-rm-mixture \
+   --pretrain /data/wmz_workspace/checkpoints/llama3-rm \
    --bf16 \
    --max_len 4096 \
    --dataset $GENERATE_OUTPUT  \
@@ -77,7 +86,7 @@ openrlhf.cli.train_dpo \
    --dataset $RM_OUTPUT \
    --dataset_probs 1.0 \
    --prompt_key prompt \
-   --train_batch_size 128 \
+   --train_batch_size 16 \
    --micro_train_batch_size 2 \
    --pretrain $POLICY_MODEL_PATH \
    --ref_pretrain $REF_MODEL_PATH \
@@ -87,6 +96,10 @@ openrlhf.cli.train_dpo \
    --bf16 \
    --learning_rate 5e-7 \
    --gradient_checkpointing
+   --adam_offload
+   --use_wandb True \
+   --wandb_project ${project_name}
+   --wandb_run_name ${run_name}
 EOF
    echo $dpo_commands
    deepspeed --module $dpo_commands
